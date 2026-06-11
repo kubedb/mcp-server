@@ -1,0 +1,42 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-07-09/server.schema.json",
+  "name": "dev.kubedb/mcp-server",
+  "description": "Manage KubeDB databases on Kubernetes and OpenShift: provision Postgres, MySQL, MongoDB, Redis, Kafka, Elasticsearch and 30+ other engines, run day-2 operations (upgrades, scaling, volume expansion, restarts, TLS, credential rotation), configure autoscaling, and inspect health, versions, and connection info.",
+  "status": "active",
+  "repository": {
+    "url": "https://github.com/kubedb/mcp-server",
+    "source": "github"
+  },
+  "version": "0.1.0",
+  "websiteUrl": "https://kubedb.com",
+  "packages": [
+    {
+      "registryType": "oci",
+      "identifier": "ghcr.io/kubedb/mcp-server:v0.1.0",
+      "transport": {
+        "type": "streamable-http",
+        "url": "http://{host}:8080/mcp"
+      },
+      "environmentVariables": [
+        {
+          "name": "KUBEDB_MCP_READ_ONLY",
+          "description": "Set true to expose only read tools",
+          "isRequired": false,
+          "format": "boolean"
+        },
+        {
+          "name": "KUBEDB_MCP_DISABLE_DESTRUCTIVE",
+          "description": "Set true to disable delete and other destructive operations",
+          "isRequired": false,
+          "format": "boolean"
+        },
+        {
+          "name": "KUBEDB_MCP_ALLOW_CREDENTIALS",
+          "description": "Set true to let kubedb_get_connection_info return decoded database credentials",
+          "isRequired": false,
+          "format": "boolean"
+        }
+      ]
+    }
+  ]
+}

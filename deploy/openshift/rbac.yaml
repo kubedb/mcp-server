@@ -1,0 +1,84 @@
+# RBAC for the KubeDB MCP server running in-cluster.
+#
+# Two cluster roles are provided:
+#   kubedb-mcp-read : enough for the read and observe tools
+#   kubedb-mcp-full : adds write access for lifecycle and day-2 tools
+#
+# Credentials access (kubedb_get_connection_info with includeCredentials)
+# additionally needs the kubedb-mcp-credentials role and the server flag
+# --allow-credentials (or KUBEDB_MCP_ALLOW_CREDENTIALS=true).
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kubedb-mcp
+  namespace: kubedb-mcp
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kubedb-mcp-read
+rules:
+  - apiGroups:
+      - kubedb.com
+      - ops.kubedb.com
+      - catalog.kubedb.com
+      - autoscaling.kubedb.com
+      - schema.kubedb.com
+      - archiver.kubedb.com
+      - kafka.kubedb.com
+      - postgres.kubedb.com
+      - elasticsearch.kubedb.com
+      - ui.kubedb.com
+      - gitops.kubedb.com
+    resources: ["*"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["pods", "services", "events"]
+    verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kubedb-mcp-full
+rules:
+  - apiGroups:
+      - kubedb.com
+      - ops.kubedb.com
+      - catalog.kubedb.com
+      - autoscaling.kubedb.com
+      - schema.kubedb.com
+      - archiver.kubedb.com
+      - kafka.kubedb.com
+      - postgres.kubedb.com
+      - elasticsearch.kubedb.com
+      - gitops.kubedb.com
+    resources: ["*"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["ui.kubedb.com"]
+    resources: ["*"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["pods", "services", "events"]
+    verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kubedb-mcp-credentials
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kubedb-mcp
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kubedb-mcp-full
+subjects:
+  - kind: ServiceAccount
+    name: kubedb-mcp
+    namespace: kubedb-mcp

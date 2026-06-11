@@ -1,0 +1,74 @@
+# Deploy the KubeDB MCP server via the MCP lifecycle operator
+# (https://github.com/kubernetes-sigs/mcp-lifecycle-operator), the same
+# operator that powers the MCP catalog in Red Hat OpenShift AI.
+#
+# Prereqs:
+#   1. The MCP lifecycle operator is installed (ships with OpenShift AI 3.4+).
+#   2. kubectl apply -f rbac.yaml   (namespace kubedb-mcp, SA, cluster roles)
+#
+# After this resource is Ready, the cluster-internal endpoint is:
+#   http://kubedb-mcp.kubedb-mcp.svc.cluster.local:8080/mcp
+# and it can be registered with the MCP gateway / gen AI studio.
+apiVersion: mcp.x-k8s.io/v1alpha1
+kind: MCPServer
+metadata:
+  name: kubedb-mcp
+  namespace: kubedb-mcp
+spec:
+  source:
+    type: ContainerImage
+    containerImage:
+      # Use the Red Hat certified image from registry.connect.redhat.com
+      # once published; ghcr.io hosts the community build.
+      ref: ghcr.io/kubedb/mcp-server:v0.1.0
+  config:
+    port: 8080
+    path: /mcp
+    env:
+      - name: KUBEDB_MCP_TRANSPORT
+        value: "http"
+      - name: KUBEDB_MCP_LISTEN
+        value: ":8080"
+      # Safety posture for shared clusters. Flip to taste.
+      - name: KUBEDB_MCP_DISABLE_DESTRUCTIVE
+        value: "true"
+      - name: KUBEDB_MCP_ALLOW_CREDENTIALS
+        value: "false"
+  runtime:
+    replicas: 1
+    resources:
+      requests:
+        cpu: "100m"
+        memory: "128Mi"
+      limits:
+        memory: "256Mi"
+    security:
+      serviceAccountName: kubedb-mcp
+      podSecurityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      securityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        runAsNonRoot: true
+        capabilities:
+          drop:
+            - ALL
+    health:
+      livenessProbe:
+        httpGet:
+          path: /healthz
+          port: 8080
+        initialDelaySeconds: 5
+        periodSeconds: 30
+      readinessProbe:
+        httpGet:
+          path: /healthz
+          port: 8080
+        initialDelaySeconds: 2
+        periodSeconds: 10
+  mcp:
+    # The server runs the streamable HTTP transport in stateless JSON mode,
+    # so replicas can be load balanced freely.
+    stateless: true
