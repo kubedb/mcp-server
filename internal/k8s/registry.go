@@ -13,6 +13,12 @@ const (
 	GroupUI          = "ui.kubedb.com"
 	GroupGitOps      = "gitops.kubedb.com"
 	GroupElastic     = "elasticsearch.kubedb.com"
+
+	// GroupAppCatalog holds the binding resources (e.g. mongodbbindings) that
+	// carry public gateway connection info in their status.
+	GroupAppCatalog = "catalog.appscode.com"
+	// GroupGatewayAPI is the upstream Gateway API group.
+	GroupGatewayAPI = "gateway.networking.k8s.io"
 )
 
 // OpsRequestTypes lists the operation types shared across database kinds.
