@@ -122,6 +122,38 @@ func (c *Clients) FindKind(kind string) (ResourceInfo, error) {
 	return ResourceInfo{}, fmt.Errorf("kind %q not found in any KubeDB API group. Installed database kinds: %s. Use kubedb_list_kinds to see every KubeDB resource", kind, strings.Join(known, ", "))
 }
 
+// FindResourceInGroup resolves a kind (case-insensitive) within a specific API
+// group to its preferred-version resource. It is used for non-KubeDB groups
+// such as catalog.appscode.com and gateway.networking.k8s.io. Returns ok=false
+// when the group or kind is not served by the cluster.
+func (c *Clients) FindResourceInGroup(group, kind string) (ResourceInfo, bool, error) {
+	lists, err := c.Discovery.ServerPreferredResources()
+	if err != nil && len(lists) == 0 {
+		return ResourceInfo{}, false, fmt.Errorf("API discovery failed: %w", err)
+	}
+	for _, l := range lists {
+		gv, gvErr := schema.ParseGroupVersion(l.GroupVersion)
+		if gvErr != nil || gv.Group != group {
+			continue
+		}
+		for _, r := range l.APIResources {
+			if strings.Contains(r.Name, "/") {
+				continue // skip subresources
+			}
+			if strings.EqualFold(r.Kind, kind) {
+				return ResourceInfo{
+					Group:      gv.Group,
+					Version:    gv.Version,
+					Kind:       r.Kind,
+					Resource:   r.Name,
+					Namespaced: r.Namespaced,
+				}, true, nil
+			}
+		}
+	}
+	return ResourceInfo{}, false, nil
+}
+
 // DatabaseKinds returns the kinds in the core kubedb.com group.
 func (c *Clients) DatabaseKinds() ([]ResourceInfo, error) {
 	resources, err := c.KubeDBResources(false)
